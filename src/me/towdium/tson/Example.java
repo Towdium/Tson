@@ -11,7 +11,7 @@ import java.util.Map;
 public class Example {
     public static void main(String[] args) {
         String s = "{\"name\":\"Demo\", \"value\": 123}";
-        Map<String, String> o = Tson.load(s).as(HashMap.class);
+        Map<String, Object> o = Tson.load(s).as(HashMap.class);
         System.out.println(o);
         s = "{\"name\":\"Demo\", \"list\": [2.5e3, 0.12, 2]}";
         Clazz c = Tson.loadAs(s, Clazz.class);
