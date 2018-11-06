@@ -16,11 +16,7 @@ public class Tson {
     }
 
     public static <T> T loadAs(String s, Class<T> c) {
-        try {
-            return load(s).as(c);
-        } catch (ReflectiveOperationException e) {
-            return null;
-        }
+        return load(s).as(c);
     }
 
     public static String trim(String s) {
@@ -84,7 +80,7 @@ public class Tson {
             else return new NNumber(s, i);
         }
 
-        public abstract <T> T as(Type c) throws ReflectiveOperationException;
+        public abstract <T> T as(Type c);
     }
 
     public static class NConst extends NValue {
@@ -107,7 +103,7 @@ public class Tson {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T as(Type t) throws ReflectiveOperationException {
+        public <T> T as(Type t) {
             if (!(t instanceof Class)) return null;
             Class c = (Class) t;
             if ((content == CONTENT.TRUE || content == CONTENT.FALSE)
@@ -115,7 +111,7 @@ public class Tson {
                 return (T) content.object();
             } else if (content == CONTENT.NULL && !c.isPrimitive()) {
                 return (T) content.object();
-            } else throw new ReflectiveOperationException("CONTENT not match.");
+            } else return null;
         }
 
         enum CONTENT {
@@ -167,31 +163,35 @@ public class Tson {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T as(Type t) throws ReflectiveOperationException {
+        public <T> T as(Type t) {
             if (t instanceof Class) {
                 Class c = (Class) t;
                 if (Map.class.isAssignableFrom(c)) {
-                    Constructor<?> m = c.getDeclaredConstructor();
-                    m.setAccessible(true);
-                    Map ret = (Map) m.newInstance();
-                    for (Map.Entry<String, NValue> i : values.entrySet())
-                        ret.put(i.getKey(), i.getValue().as(Object.class));
-                    return (T) ret;
-                } else {
-                    Constructor<?> m = c.getDeclaredConstructor();
-                    m.setAccessible(true);
-                    Object ret = m.newInstance();
-                    for (Map.Entry<String, NValue> i : values.entrySet()) {
-                        Field f = c.getDeclaredField(i.getKey());
-                        Object o = null;
-                        try {
-                            o = i.getValue().as(f.getGenericType());
-                        } catch (ReflectiveOperationException ignored) {
-                        }
-                        f.setAccessible(true);
-                        f.set(ret, o);
+                    try {
+                        Constructor<?> m = c.getDeclaredConstructor();
+                        m.setAccessible(true);
+                        Map ret = (Map) m.newInstance();
+                        for (Map.Entry<String, NValue> i : values.entrySet())
+                            ret.put(i.getKey(), i.getValue().as(Object.class));
+                        return (T) ret;
+                    } catch (ReflectiveOperationException ignored) {
+                        return null;
                     }
-                    return (T) ret;
+                } else {
+                    try {
+                        Constructor<?> m = c.getDeclaredConstructor();
+                        m.setAccessible(true);
+                        Object ret = m.newInstance();
+                        for (Map.Entry<String, NValue> i : values.entrySet()) {
+                            Field f = c.getDeclaredField(i.getKey());
+                            Object o = i.getValue().as(f.getGenericType());
+                            f.setAccessible(true);
+                            f.set(ret, o);
+                        }
+                        return (T) ret;
+                    } catch (ReflectiveOperationException ignored) {
+                        return null;
+                    }
                 }
             } else if (t instanceof ParameterizedType) {
                 ParameterizedType pt = (ParameterizedType) t;
@@ -203,7 +203,7 @@ public class Tson {
                     return (T) ret;
                 }
             }
-            throw new ReflectiveOperationException("Format not suitable.");
+            return null;
         }
     }
 
@@ -227,11 +227,11 @@ public class Tson {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T as(Type t) throws ReflectiveOperationException {
+        public <T> T as(Type t) {
             if (!(t instanceof Class)) return null;
             Class<?> c = (Class) t;
             if (c.isAssignableFrom(String.class)) return (T) str;
-            else throw new ReflectiveOperationException("CONTENT not match.");
+            else return null;
         }
     }
 
@@ -258,7 +258,7 @@ public class Tson {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T as(Type t) throws ReflectiveOperationException {
+        public <T> T as(Type t) {
             if (t instanceof Class) {
                 Class<?> c = (Class) t;
                 Class<?> comp = c.getComponentType();
@@ -275,7 +275,7 @@ public class Tson {
                     return (T) ret;
                 }
             }
-            throw new ReflectiveOperationException("Format not suitable.");
+            return null;
         }
     }
 
@@ -297,12 +297,12 @@ public class Tson {
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> T as(Type t) throws ReflectiveOperationException {
+        public <T> T as(Type t) {
             if (!(t instanceof Class)) return null;
             Class<?> c = (Class) t;
             if (c.isAssignableFrom(Integer.class)) return (T) Integer.valueOf((int) num);
             else if (c.isAssignableFrom(Float.class)) return (T) Float.valueOf(num);
-            else throw new ReflectiveOperationException("CONTENT not match.");
+            else return null;
         }
     }
 }
